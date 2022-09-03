@@ -1,7 +1,7 @@
 import express from "express";
 import { MongoClient } from "mongodb";
-import dotenv from 'dotenv';
-import joi from 'joi';
+import dotenv from "dotenv";
+import joi from "joi";
 
 dotenv.config();
 
@@ -15,22 +15,36 @@ mongoClient.connect(() => {
   db = mongoClient.db("batepapo-uol");
 });
 
+// participants
+
 app.post("/participants", async (req, res) => {
-	const name = req.body.name;
+  const name = req.body.name;
 
-	const nameSchema = joi.object({
-		name: joi.string().required()
-	  });
+    const nameSchema = joi.object({
+      name: joi.string().required(),
+    });
 
-	const validation = nameSchema.validate({ name: name }, { abortEarly: true });
-	if (validation.error) {
-		res.sendStatus(422);
-		return;
-	  }
+    const validation = nameSchema.validate({ name: name }, { abortEarly: true });
+    if (validation.error) {
+      return res.sendStatus(422);
+    }
 
-	res.send('Created ' + name);
+  try {
+    const repetido = await db
+      .collection("participants")
+      .findOne({ name: name });
+    if (repetido) {
+      return res.sendStatus(404);
+    } else {
+      await db.collection("participants").insertOne({ name: name });
+      return res.sendStatus(201);
+    }
+  } catch (error) {
+    console.error(error);
+    res.sendStatus(500);
+  }
 });
 
 app.listen(5000, () => {
-	console.log('Server is listening on port 5000.');
-  });
+  console.log("Server is listening on port 5000.");
+});
