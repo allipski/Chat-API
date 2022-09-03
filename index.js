@@ -2,6 +2,7 @@ import express from "express";
 import { MongoClient } from "mongodb";
 import dotenv from "dotenv";
 import joi from "joi";
+import dayjs from "dayjs";
 
 dotenv.config();
 
@@ -37,6 +38,7 @@ app.post("/participants", async (req, res) => {
       return res.sendStatus(409);
     } else {
       await db.collection("participants").insertOne({ name: name, lastStatus: Date.now()});
+      await db.collection("messages").insertOne({from: name, to: 'Todos', text: 'entra na sala...', type: 'status', time: dayjs().format('DD/MM/YYYY')});
       return res.sendStatus(201);
     }
   } catch (error) {
