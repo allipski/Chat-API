@@ -3,11 +3,13 @@ import { MongoClient } from "mongodb";
 import dotenv from "dotenv";
 import joi from "joi";
 import dayjs from "dayjs";
+import cors from 'cors';
 
 dotenv.config();
 
 const app = express();
 app.use(express.json());
+app.use(cors());
 
 const mongoClient = new MongoClient(process.env.MONGO_URI);
 let db;
@@ -38,7 +40,7 @@ app.post("/participants", async (req, res) => {
       return res.sendStatus(409);
     } else {
       await db.collection("participants").insertOne({ name: name, lastStatus: Date.now()});
-      await db.collection("messages").insertOne({from: name, to: 'Todos', text: 'entra na sala...', type: 'status', time: dayjs().format('DD/MM/YYYY')});
+      await db.collection("messages").insertOne({from: name, to: 'Todos', text: 'entra na sala...', type: 'status', time: dayjs().format('HH:mm:ss')});
       return res.sendStatus(201);
     }
   } catch (error) {
@@ -63,7 +65,7 @@ app.get("/participants", async (req, res) => {
 
 app.post("/messages", async (req, res) => {
   const { to: to, text: text, type: type } = req.body;
-  const { user: user } = req.headers;
+  const user = req.headers.user;
 
     const messageSchema = joi.object({
       to: joi.string().required(),
@@ -74,27 +76,27 @@ app.post("/messages", async (req, res) => {
     const validation = messageSchema.validate({ to: to, text: text, type: type }, { abortEarly: true });
     if (validation.error) {
       return res.sendStatus(422);
-    } else {
-      return res.sendStatus(201);
-    }
+    } 
 
-  // try {
-  //   const repetido = await db
-  //     .collection("participants")
-  //     .findOne({ name: name });
-  //   if (repetido) {
-  //     return res.sendStatus(409);
-  //   } else {
-  //     await db.collection("participants").insertOne({ name: name, lastStatus: Date.now()});
-  //     await db.collection("messages").insertOne({from: name, to: 'Todos', text: 'entra na sala...', type: 'status', time: dayjs().format('DD/MM/YYYY')});
-  //     return res.sendStatus(201);
-  //   }
-  // } catch (error) {
-  //   console.error(error);
-  //   res.sendStatus(500);
-  // }
-  
+  try {
+      await db.collection("messages").insertOne({ from: user, to: to, text: text, type: type, time: dayjs().format('HH:mm:ss')});
+      return res.sendStatus(201);
+    } catch (error) {
+    console.error(error);
+    res.sendStatus(500);
+  }
 });
+
+app.get("/messages", async (req, res) => {
+
+	try {
+		const messages = await db.collection('messages').find().toArray();
+		res.send(messages);
+	  } catch (error) {
+		console.error(error);
+		res.sendStatus(500);
+	  }
+})
 
 app.listen(5000, () => {
   console.log("Server is listening on port 5000.");
