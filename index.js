@@ -57,8 +57,45 @@ app.get("/participants", async (req, res) => {
 		console.error(error);
 		res.sendStatus(500);
 	  }
-}
-)
+})
+
+// messages
+
+app.post("/messages", async (req, res) => {
+  const { to: to, text: text, type: type } = req.body;
+  const { user: user } = req.headers;
+
+    const messageSchema = joi.object({
+      to: joi.string().required(),
+      text: joi.string().required(),
+      type: joi.string().valid("private_message", "message").required(),
+    });
+
+    const validation = messageSchema.validate({ to: to, text: text, type: type }, { abortEarly: true });
+    if (validation.error) {
+      return res.sendStatus(422);
+    } else {
+      return res.sendStatus(201);
+    }
+
+  // try {
+  //   const repetido = await db
+  //     .collection("participants")
+  //     .findOne({ name: name });
+  //   if (repetido) {
+  //     return res.sendStatus(409);
+  //   } else {
+  //     await db.collection("participants").insertOne({ name: name, lastStatus: Date.now()});
+  //     await db.collection("messages").insertOne({from: name, to: 'Todos', text: 'entra na sala...', type: 'status', time: dayjs().format('DD/MM/YYYY')});
+  //     return res.sendStatus(201);
+  //   }
+  // } catch (error) {
+  //   console.error(error);
+  //   res.sendStatus(500);
+  // }
+  
+});
+
 app.listen(5000, () => {
   console.log("Server is listening on port 5000.");
 });
