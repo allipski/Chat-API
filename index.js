@@ -88,10 +88,18 @@ app.post("/messages", async (req, res) => {
 });
 
 app.get("/messages", async (req, res) => {
+  const user = req.headers.user;
+  const limit = parseInt(req.query.limit);
 
 	try {
-		const messages = await db.collection('messages').find().toArray();
-		res.send(messages);
+		const received = await db.collection('messages').find().toArray()
+    const messages = received.filter(message => message.type === 'message' || message.to === user || message.from === user);
+    if (!limit) {
+      res.send(messages);
+    } else {
+      res.send(messages.slice(-limit));
+    }
+		
 	  } catch (error) {
 		console.error(error);
 		res.sendStatus(500);
