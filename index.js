@@ -34,17 +34,29 @@ app.post("/participants", async (req, res) => {
       .collection("participants")
       .findOne({ name: name });
     if (repetido) {
-      return res.sendStatus(404);
+      return res.sendStatus(409);
     } else {
-      await db.collection("participants").insertOne({ name: name });
+      await db.collection("participants").insertOne({ name: name, lastStatus: Date.now()});
       return res.sendStatus(201);
     }
   } catch (error) {
     console.error(error);
     res.sendStatus(500);
   }
+  
 });
 
+app.get("/participants", async (req, res) => {
+
+	try {
+		const participants = await db.collection('participants').find().toArray();
+		res.send(participants);
+	  } catch (error) {
+		console.error(error);
+		res.sendStatus(500);
+	  }
+}
+)
 app.listen(5000, () => {
   console.log("Server is listening on port 5000.");
 });
