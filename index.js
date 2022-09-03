@@ -42,15 +42,13 @@ app.post("/participants", async (req, res) => {
       await db
         .collection("participants")
         .insertOne({ name: name, lastStatus: Date.now() });
-      await db
-        .collection("messages")
-        .insertOne({
-          from: name,
-          to: "Todos",
-          text: "entra na sala...",
-          type: "status",
-          time: dayjs().format("HH:mm:ss"),
-        });
+      await db.collection("messages").insertOne({
+        from: name,
+        to: "Todos",
+        text: "entra na sala...",
+        type: "status",
+        time: dayjs().format("HH:mm:ss"),
+      });
       return res.sendStatus(201);
     }
   } catch (error) {
@@ -90,15 +88,13 @@ app.post("/messages", async (req, res) => {
   }
 
   try {
-    await db
-      .collection("messages")
-      .insertOne({
-        from: user,
-        to: to,
-        text: text,
-        type: type,
-        time: dayjs().format("HH:mm:ss"),
-      });
+    await db.collection("messages").insertOne({
+      from: user,
+      to: to,
+      text: text,
+      type: type,
+      time: dayjs().format("HH:mm:ss"),
+    });
     return res.sendStatus(201);
   } catch (error) {
     console.error(error);
@@ -155,3 +151,26 @@ app.post("/status", async (req, res) => {
 app.listen(5000, () => {
   console.log("Server is listening on port 5000.");
 });
+
+async function removeInactive() {
+  try {
+    const all = await db.collection("participants").find().toArray();
+    const toDelete = all.filter((user) => Date.now() - user.lastStatus > 10000);
+    const ids = toDelete.map((user) => user._id);
+    const leave = toDelete.map((item) => {
+      return {
+        from: item.name,
+        to: "Todos",
+        text: "sai da sala...",
+        type: "status",
+        time: "HH:mm:ss",
+      };
+    });
+    await db.collection("messages").insertMany(leave);
+    await db.collection("participants").deleteMany({ _id: { $in: ids } });
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+setInterval(removeInactive, 15000);
