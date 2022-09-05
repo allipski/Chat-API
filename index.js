@@ -83,7 +83,13 @@ app.post("/messages", async (req, res) => {
     { to: to, text: text, type: type },
     { abortEarly: true }
   );
-  if (validation.error) {
+
+  const validarFrom = await db
+    .collection("participants")
+    .findOne({ name: user });
+  console.log(validarFrom);
+
+  if (validation.error || !validarFrom) {
     return res.sendStatus(422);
   }
 
@@ -154,20 +160,30 @@ app.listen(5000, () => {
 
 async function removeInactive() {
   try {
+    console.log('teste')
     const all = await db.collection("participants").find().toArray();
-    const toDelete = all.filter((user) => Date.now() - user.lastStatus > 10000);
-    const ids = toDelete.map((user) => user._id);
-    const leave = toDelete.map((item) => {
-      return {
-        from: item.name,
-        to: "Todos",
-        text: "sai da sala...",
-        type: "status",
-        time: "HH:mm:ss",
-      };
-    });
-    await db.collection("messages").insertMany(leave);
-    await db.collection("participants").deleteMany({ _id: { $in: ids } });
+    const toDelete = all.filter(
+      (user) => Date.now() - user.lastStatus > 10000
+    );
+    if (toDelete.length != 0) {
+      console.log('teste2');
+      const ids = toDelete.map((user) => user._id);
+      const leave = toDelete.map((item) => {
+        return {
+          from: item.name,
+          to: "Todos",
+          text: "sai da sala...",
+          type: "status",
+          time: "HH:mm:ss",
+        };
+      });
+      await db.collection("messages").insertMany(leave);
+      await db.collection("participants").deleteMany({ _id: { $in: ids } });
+      console.log('deletou');
+    } else {
+      console.log('nada pra deletar');
+      return false;
+    }
   } catch (error) {
     console.error(error);
   }
